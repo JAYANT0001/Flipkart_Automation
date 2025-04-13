@@ -1,38 +1,158 @@
 package demo;
 
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeDriverService;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.logging.LogType;
 import org.openqa.selenium.logging.LoggingPreferences;
+import org.openqa.selenium.support.ui.ExpectedCondition;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
+import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.logging.Level;
-
 
 // import io.github.bonigarcia.wdm.WebDriverManager;
 import demo.wrappers.Wrappers;
 
 public class TestCases {
+
     ChromeDriver driver;
+    String url = "https://www.flipkart.com/";
+    Wrappers wrapper;
+    WebDriverWait wait;
+    String product1 = "Washing Machine";
+    String product2 = "iPhone";
+    String product3 = "Coffee Mug";
 
-    /*
-     * TODO: Write your tests here with testng @Test annotation. 
-     * Follow `testCase01` `testCase02`... format or what is provided in instructions
-     */
+    @Test
+    public void testCase01() throws InterruptedException {
+        System.out.println("Start test case 01");
+        driver.get(url);
+        wrapper.dismissLoginPopupIfPresent(driver, wait);
+        WebElement searchElement = wait
+                .until(ExpectedConditions.elementToBeClickable(By.xpath("//input[@class='Pke_EE']")));
+        wrapper.sendKeys(searchElement, product1);
+        driver.findElement(By.xpath("//button[@type='submit']")).click();
+        WebElement popularityElement = driver.findElement(By.xpath("//div[text()='Popularity']"));
+        wait.until(ExpectedConditions.visibilityOf(popularityElement));
+        wrapper.click(popularityElement, driver);
+        List<WebElement> ratingElements = null;
+        int countOfMachine = wrapper.countOfMachineWith(driver, ratingElements, "//div[@class='XQDdHH']");
+        System.out.println("Count of Washing Machine with less than or equal to 4 ratiing is :: " + countOfMachine);
+        System.out.println("End test case 01");
+    }
 
-     
-    /*
-     * Do not change the provided methods unless necessary, they will help in automation and assessment
-     */
+    @Test
+    public void testCase02() throws InterruptedException {
+        System.out.println("Start test case 02");
+        driver.get(url);
+        wrapper.dismissLoginPopupIfPresent(driver, wait);
+        WebElement searchElement = wait
+                .until(ExpectedConditions.elementToBeClickable(By.xpath("//input[@class='Pke_EE']")));
+        wrapper.sendKeys(searchElement, product2);
+        driver.findElement(By.xpath("//button[@type='submit']")).click();
+        Thread.sleep(2000);
+        ((JavascriptExecutor) driver).executeScript("window.scrollBy(0,1000)");
+
+        List<WebElement> containers = driver.findElements(By.xpath("//div[@class='yKfJKb row']"));
+        System.out.println("Number of product containers found: " + containers.size());
+
+        for (WebElement container : containers) {
+            try {
+                List<WebElement> titleElements = container.findElements(By.xpath(
+                        ".//div[contains(@class,'KzDlHZ') or contains(@class,'IRpwTa') or contains(@class,'s1Q9rs')]"));
+
+                if (titleElements.isEmpty())
+                    continue;
+                String title = titleElements.get(0).getText();
+
+                List<WebElement> discountElements = container.findElements(By.xpath(".//*[contains(text(),'% off')]"));
+                if (discountElements.isEmpty())
+                    continue;
+
+                String discountText = discountElements.get(0).getText();
+                int discount = Integer.parseInt(discountText.replaceAll("[^0-9]", ""));
+
+                if (discount > 17) {
+                    System.out.println("Title: " + title);
+                    System.out.println("Discount: " + discount + "%");
+                    System.out.println("----------------------------");
+                }
+            } catch (Exception e) {
+                System.out.println("Error processing a product: " + e.getMessage());
+            }
+        }
+        System.out.println("End test case 02");
+    }
+
+    @Test
+    public void testCase03() throws InterruptedException {
+        System.out.println("Start test case 03");
+        driver.get(url);
+        wrapper.dismissLoginPopupIfPresent(driver, wait);
+        WebElement searchElement = wait
+                .until(ExpectedConditions.elementToBeClickable(By.xpath("//input[@class='Pke_EE']")));
+        wrapper.sendKeys(searchElement, product3);
+        driver.findElement(By.xpath("//button[@type='submit']")).click();
+        Thread.sleep(2000);
+        WebElement filterElement = driver.findElement(
+                By.xpath("//div[contains(text(),'4') and contains(text(),'above')]/preceding-sibling::div"));
+        wrapper.click(filterElement, driver);
+        ((JavascriptExecutor) driver).executeScript("window.scrollBy(0,1000)");
+        List<WebElement> containers = driver.findElements(By.xpath("//div[@class='slAVV4']"));
+        System.out.println("Number of product containers found: " + containers.size());
+        List<HashMap<String, Object>> allProducts = new ArrayList<>();
+        for (WebElement container : containers) {
+            try {
+                WebElement titlement = container.findElement(By.xpath(".//a[@class='wjcEIp']"));
+                String titleText = titlement.getText();
+
+                WebElement imageElement = container.findElement(By.xpath(".//img[@class='DByuf4']"));
+                String imageURL = imageElement.getAttribute("src");
+
+                WebElement reviewElement = container.findElement(By.xpath(".//span[@class='Wphh3N']"));
+                String reviewCounts = reviewElement.getText();
+                int reviews = Integer.parseInt(reviewCounts.replaceAll("[^0-9]", ""));
+
+                HashMap<String, Object> product = new HashMap<>();
+                product.put("title", titleText);
+                product.put("imageUrl", imageURL);
+                product.put("reviews", reviews);
+
+                allProducts.add(product);
+
+            } catch (Exception e) {
+                System.out.println("Error processing a product: " + e.getMessage());
+            }
+        }
+        // sorting by lambda expression
+        allProducts.sort((a, b) -> (int) b.get("reviews") - (int) a.get("reviews"));
+
+        for (int i = 0; i < Math.min(5, allProducts.size()); i++) {
+            Map<String, Object> product = allProducts.get(i);
+            System.out.println("Title : " + product.get("title"));
+            System.out.println("ImageURL : " + product.get("imageUrl"));
+            System.out.println("Reviews : " + product.get("reviews"));
+            System.out.println("_________________________________");
+        }
+        System.out.println("End test case 03");
+
+    }
+
     @BeforeTest
-    public void startBrowser()
-    {
+    public void startBrowser() {
         System.setProperty("java.util.logging.config.file", "logging.properties");
 
         // NOT NEEDED FOR SELENIUM MANAGER
@@ -46,17 +166,22 @@ public class TestCases {
         options.setCapability("goog:loggingPrefs", logs);
         options.addArguments("--remote-allow-origins=*");
 
-        System.setProperty(ChromeDriverService.CHROME_DRIVER_LOG_PROPERTY, "build/chromedriver.log"); 
+        System.setProperty(ChromeDriverService.CHROME_DRIVER_LOG_PROPERTY, "build/chromedriver.log");
 
         driver = new ChromeDriver(options);
 
         driver.manage().window().maximize();
+
+        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
+        wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+
+        wrapper = new Wrappers();
+
     }
 
     @AfterTest
-    public void endTest()
-    {
-        driver.close();
+    public void endTest() {
+
         driver.quit();
 
     }
