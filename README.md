@@ -53,6 +53,6 @@ This project automates product search and filtering functionalities on [Flipkart
 1. **Clone the Repository:**
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/AutomationProject.git
-cd AutomationProject
+git clone https://github.com/JAYANT0001/Flipkart_Automation.git
+and run in local.
 
